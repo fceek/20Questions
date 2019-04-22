@@ -2,23 +2,29 @@
 
     $attrMap = null;
     $objMap = null;
-    $attrCount = array();
     $questionCount = 0;
     $modObj = array();
 
     // load attributes .JSON file to memory
-    function loadAttrs() {
-        $jsonStr = file_get_contents("data/attrIndex");
+    // if isInit = false, read from temp file
+    function loadAttrs($isInit = false) {
+        if ($isInit) $fileType = "data/attrIndex";
+        else $fileType = "data/attrIndex.temp";
+        $jsonStr = file_get_contents($fileType);
         $GLOBALS['attrMap'] = json_decode($jsonStr,true);
     }
 
     // load objects .JSON file to memory
-    function loadObjs() {
-        $jsonStr = file_get_contents("data/oInfo");
+    // if isInit = false, read from temp file
+    function loadObjs($isInit = false) {
+        if ($isInit) $fileType = "data/oInfo";
+        else $fileType = "data/oInfo.temp";
+        $jsonStr = file_get_contents($fileType);
         $GLOBALS['objMap'] = json_decode($jsonStr,true);
     }
 
     // pick the most Identifying attributes
+    // return: ($targetIndex,$targetAttr)
     function pickAttr() {
         $targetAttr = null;
         $targetIndex = null;
@@ -37,36 +43,33 @@
     }
 
     // construct JSON string for next question
+    // pass in: ($targetIndex,$targetAttr)
+    // return: JSON{"type":"filter","aname":attrName,"qnumber":questionCount}
     function sendAttr($sentAttr) {
         $constructJSON = array();
         $GLOBALS['questionCount']++;
         $constructJSON['type'] = 'filter';
-        $constructJSON['name'] = $sentAttr[1][0];
+        $constructJSON['aname'] = $sentAttr[1][0];
         $constructJSON['qnumber'] = $GLOBALS['questionCount'];
         $constructJSON = json_encode($constructJSON);
-        // send JSON to client
+        return $constructJSON;
     }
 
     // delete asked attributes
+    // pass in: ($targetIndex,$targetAttr)
     function dropAttr($theAttr) {
         unset($GLOBALS['attrMap'][$theAttr[0]]);
     }
 
     // filter objects remaining after the previous question
+    // pass in: (($targetIndex,$targetAttr), true for with, false for without)
     function filterObj($attr,$flag) {
-        $backupObj = array_rand($GLOBALS['objMap'],1); // prepare a random-picked result
+
         if ($flag == true) $flag = 'without';
         else $flag = 'with';
         $attrIndex = $attr[0];
         foreach ($GLOBALS['objMap'] as $tag => $currentObj) {
             if ( in_array($attrIndex,$currentObj[$flag]) ) unset($GLOBALS['objMap'][$tag]);
-        }
-        if (count($GLOBALS['objMap']) == 1) {
-            reset($GLOBALS['objMap']);
-            verifyObj();
-        }
-        if ( (count($GLOBALS['objMap']) == 0) or ($GLOBALS['questionCount'] == 19) ) {
-            verifyObj($backupObj);
         }
         updateAttr();
     }
@@ -86,22 +89,17 @@
         }
     }
 
-    // decode JSON from question answer to pass to filterObj()
-    function decodeAns($ans) {
-        $ansJSON = json_decode($ans,true);
-        return ($ansJSON['ans'] == "n");
-    }
-
     // when only 1 last object left, check if it's the answer
+    // return: JSON{"type":"verify","aname":objName,"qnumber":questionCount}
     function verifyObj($opt = null) {
         $constructJSON = array();
         $GLOBALS['questionCount']++;
         $constructJSON['type'] = 'verify';
-        if ($opt == null) $constructJSON['name'] = key($GLOBALS['objMap']);
-        else $constructJSON['name'] = $opt;
+        if ($opt == null) $constructJSON['aname'] = key($GLOBALS['objMap']);
+        else $constructJSON['aname'] = $opt;
         $constructJSON['qnumber'] = $GLOBALS['questionCount'];
         $constructJSON = json_encode($constructJSON);
-        // send JSON to client
+        return $constructJSON;
     }
 
     // record what the object in this life cycle is like
@@ -111,6 +109,7 @@
         $GLOBALS['modObj'][$attr[0]] = $state;
     }
 
+    // update the object described in this run in memory
     function updateData($objName) {
         $objName = strtolower($objName);
         loadAttrs();
@@ -143,44 +142,18 @@
         updateAttr();
     }
 
-    function storeData() {
-        $tempAttr = fopen('data/attrIndex','w');
+    // update objects and attributes file
+    // if isInit = false, store to temp file
+    function storeData($isInit = false) {
+        if (!$isInit) $append = ".temp";
+        else $append = "";
+        $tempAttr = fopen('data/attrIndex'.$append,'w');
         $contentAttr = json_encode($GLOBALS['attrMap']);
         fwrite($tempAttr,$contentAttr);
         fclose($tempAttr);
 
-        $tempObj = fopen('data/oInfo','w');
+        $tempObj = fopen('data/oInfo'.$append,'w');
         $contentObj = json_encode($GLOBALS['objMap']);
         fwrite($tempObj,$contentObj);
         fclose($tempObj);
     }
-
-    // simulate the action of client for offline-logic
-    function simulateClient() {
-
-        // generate questions to form page
-        $thisAttr = pickAttr();
-        sendAttr($thisAttr);
-        dropAttr($thisAttr);
-
-        // server would receive yes/no
-        $fakeJSON = '{"ans":"y"}';
-        filterObj($thisAttr,decodeAns($fakeJSON));
-        recordObj($thisAttr,decodeAns($fakeJSON));
-
-        // ...loop till verifyObj() executed
-        // server would receive name of the correct answer
-
-    }
-
-    // load JSON data to memory
-    loadAttrs();
-    loadObjs();
-
-    //$modObj = array(2=>0,3=>0,4=>1,5=>1);
-    //updateData('bluewater');
-    // simulateClient();
-    echo "\n";
-    print_r($attrMap);
-    print_r($objMap);
-    //storeData();

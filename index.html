@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="css/master.css">
     <link rel="stylesheet" href="https://use.typekit.net/fmv7dwq.css">
     <script src="scripts/narrow.js" charset="utf-8"></script>
+    <script src="scripts/control.js" charset="utf-8"></script>
   </head>
   <body>
     <div class="container">
@@ -20,7 +21,7 @@
           <p>This</p>
           <p>is</p>
           <p>the</p>
-          <p id="index-wrapper">3rd</p>
+          <p id="index-wrapper">n th</p>
           <p>Question.</p>
         </div>
 
@@ -37,16 +38,16 @@
 
         <div class="q-disc">
           <p>Is the Object in Your Mind</p>
-          <p id="adj">Edible ?</p>
+          <p id="adj">An Attribute ?</p>
         </div>
 
         <div class="q-opt">
           <div class="vl"></div>
-          <div class="opt yes">
+          <div class="opt yes" onclick="sendAjax(true)">
             <img src="resources/images/yes.png" alt="Yes">
             <p>Yes.</p>
           </div>
-          <div class="opt no">
+          <div class="opt no" onclick="sendAjax(false)">
             <img src="resources/images/no.png" alt="No">
             <p>No.</p>
           </div>
