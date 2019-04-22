@@ -14,7 +14,7 @@ function init() {
     xmlhttp.onreadystatechange = function() {
         if (xmlhttp.readyState==4 && xmlhttp.status==200) decode(xmlhttp.responseText);
     };
-    xmlhttp.open("GET","control.php?type=start",true)
+    xmlhttp.open("GET","scripts/control.php?type=start",true)
     xmlhttp.send();
 }
 
@@ -24,8 +24,8 @@ function sendAjax(ans) {
     xmlhttp.onreadystatechange = function() {
         if (xmlhttp.readyState==4 && xmlhttp.status==200) decode(xmlhttp.responseText);
     };
-    if (!isCheck) xmlhttp.open("GET","control.php?type=answer&ans="+ans,true);
-    else xmlhttp.open("GET","control.php?type=check&ans="+ans,true);
+    if (!isCheck) xmlhttp.open("GET","scripts/control.php?type=answer&ans="+ans,true);
+    else xmlhttp.open("GET","scripts/control.php?type=check&ans="+ans,true);
     xmlhttp.send();
 
 }
