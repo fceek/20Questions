@@ -6,41 +6,47 @@
         loadObjs(true);
         $GLOBALS['questionCount'] = 0;
         storeData();
-        $tempIndex = fopen('data/qIndex.temp','w');
-        fwrite($tempIndex,$GLOBALS['questionCount']);
-        fclose($tempIndex);
     }
 
     function loadTemp($testFile) {
         fclose($testFile);
         loadAttrs();
         loadObjs();
-        $GLOBALS['questionCount'] = file_get_contents("data/qIndex.temp");
     }
 
     function storeTempAttr($tempAttr) {
         $tempAttrFile = fopen('data/a.temp','w');
-        $tempAttr = json_encode($tempAttr);
-        fwrite($tempAttrFile,$tempAttr);
+        $tempJSON = json_encode($tempAttr);
+        fwrite($tempAttrFile,$tempJSON);
         fclose($tempAttrFile);
     }
 
     function loadTempAttr() {
         $tempAttr = file_get_contents('data/a.temp');
-        $tempAttr = json_decode($tempAttr);
-        return $tempAttr;
+        $tempJSON = json_decode($tempAttr);
+        return $tempJSON;
     }
+
+    function storeTempIndex() {
+        $tempIndexFile = fopen('data/qIndex.temp','w');
+        fwrite($tempIndexFile,$GLOBALS['questionCount']);
+        fclose($tempIndexFile);
+    }
+
+    function loadTempIndex() {
+        $GLOBALS['questionCount'] = file_get_contents('data/qIndex.temp');
+}
 
     function storeTempMod() {
         $tempModFile = fopen('data/m.temp','w');
-        $tempMod = json_encode($GLOBALS['modObj']);
-        fwrite($tempModFile,$tempMod);
+        $tempJSON = json_encode($GLOBALS['modObj']);
+        fwrite($tempModFile,$tempJSON);
         fclose($tempModFile);
     }
 
     function loadTempMod() {
         $tempMod = file_get_contents('data/m.temp');
-        $GLOBALS['modObj'] = json_decode($tempMod);
+        $GLOBALS['modObj'] = json_decode($tempMod,true);
     }
 
     function clearTemp() {
@@ -50,6 +56,14 @@
         unlink('data/qIndex.temp');
         unlink('oInfo.temp');
     }
+
+
+    session_start();
+    if (isset($_SESSION['open'])) {
+        //clearTemp();
+     }
+
+    $_SESSION['open'] = 1;
 
     if ($idFile = fopen("data/attrIndex.temp","r")) loadTemp($idFile);
     else init();
@@ -61,19 +75,22 @@
         $thisAttr = pickAttr();
         $resJSON = sendAttr($thisAttr);
         storeTempAttr($thisAttr);
+        storeTempIndex();
         dropAttr($thisAttr);
         storeData();
         echo $resJSON;
     }
 
     if ($type == "answer") {
-        $ans = $_GET["ans"];
+        $ans = convertAns($_GET["ans"]);
         $lastAttr = loadTempAttr();
+        loadTempIndex();
         loadTempMod();
         $backupObj = array_rand($GLOBALS['objMap'],1); // prepare a random-picked result
         filterObj($lastAttr,$ans);
         recordObj($lastAttr,$ans);
         storeTempMod();
+
         if (count($GLOBALS['objMap']) == 1) {
             reset($GLOBALS['objMap']);
             $resJSON = verifyObj();
@@ -83,8 +100,14 @@
         }
         else {
             $thisAttr = pickAttr();
+            if ($thisAttr[0] == null) {
+                $resJSON = verifyObj($backupObj);
+                echo $resJSON;
+                exit;
+            }
             $resJSON = sendAttr($thisAttr);
             storeTempAttr($thisAttr);
+            storeTempIndex();
             dropAttr($thisAttr);
         }
         storeData();
@@ -92,15 +115,28 @@
     }
 
     if ($type == "check") {
-        $ans = $_GET["ans"];
+
+
+        $ans = convertAns($_GET["ans"]);
+        loadTempIndex();
         if ($ans) {
+            $resJSON = terminal('Object retrived.');
             clearTemp();
-            verifyObj('success!!!');
         }
         else {
+            $resJSON = terminal('Object not recorded.');
             clearTemp();
-            verifyObj('Tried best');
         }
-
+        session_destroy();
+        echo $resJSON;
     }
 
+    if ($type == "reset") {
+        clearTemp();
+        echo "anything";
+    }
+
+    function convertAns($passIn) {
+        if ($passIn == 'true') return true;
+        else return false;
+    }

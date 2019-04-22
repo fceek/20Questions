@@ -1,10 +1,14 @@
 let questionIndex;
 let attrTag;
+let questionBlock;
+let optionBlock;
 let isCheck = false;
 
 window.onload = function () {
     questionIndex = document.getElementById("index-wrapper");
     attrTag = document.getElementById("adj");
+    questionBlock = document.querySelector(".q-disc");
+    optionBlock = document.querySelector(".q-opt");
     init();
 };
 
@@ -33,10 +37,17 @@ function sendAjax(ans) {
 //fake JSON:{"type":"filter","aname":"red","qnumber":1}
 
 function decode(theJSON) {
+    theJSON = theJSON.substring(theJSON.indexOf('{'));
     let obj = JSON.parse(theJSON);
     questionIndex.innerHTML = procNum(obj.qnumber);
     attrTag.innerHTML = procName(obj.aname) + " ?";
     if (obj.type == "verify") isCheck = true;
+    if (obj.type == "terminal") terminal(obj.aname);
+}
+
+function terminal(content) {
+    questionBlock.innerHTML = "<p>" + content + "</p>";
+    optionBlock.innerHTML = "";
 }
 
 function procName(nameStr) {
@@ -52,4 +63,13 @@ function procNum(number) {
         default: break;
     }
     return "" + number + tail;
+}
+
+function clearTemp() {
+    let xmlhttp = new XMLHttpRequest();
+    xmlhttp.onreadystatechange = function() {
+        if (xmlhttp.readyState==4 && xmlhttp.status==200) window.location.reload();
+    };
+    xmlhttp.open("GET","scripts/control.php?type=reset",true)
+    xmlhttp.send();
 }

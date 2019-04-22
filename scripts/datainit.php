@@ -29,13 +29,22 @@
         $targetAttr = null;
         $targetIndex = null;
         $attrRateBest = 0;
+        $attrCoverBest = 0;
         foreach ($GLOBALS['attrMap'] as $attrIndex => $currentAttr) {
             $attrY = $currentAttr[1];
             $attrN = $currentAttr[2];
+            if (($attrY == 0 or $attrN ==0) and ($attrY + $attrN == count($GLOBALS['objMap']))) {
+                continue;
+            }
             $attrRateCurrent = min($attrY,$attrN);
+            $attrCoverCurrent = $attrY + $attrN;
             if ( $attrRateCurrent > $attrRateBest ) {
                 $targetAttr = $currentAttr;
                 $attrRateBest = $attrRateCurrent;
+                $targetIndex = $attrIndex;
+            } elseif ($attrCoverCurrent > $attrCoverBest) {
+                $targetAttr = $currentAttr;
+                $attrCoverBest = $attrCoverCurrent;
                 $targetIndex = $attrIndex;
             }
         }
@@ -50,7 +59,7 @@
         $GLOBALS['questionCount']++;
         $constructJSON['type'] = 'filter';
         $constructJSON['aname'] = $sentAttr[1][0];
-        $constructJSON['qnumber'] = $GLOBALS['questionCount'];
+        $constructJSON['qnumber'] = (int)$GLOBALS['questionCount'];
         $constructJSON = json_encode($constructJSON);
         return $constructJSON;
     }
@@ -97,7 +106,17 @@
         $constructJSON['type'] = 'verify';
         if ($opt == null) $constructJSON['aname'] = key($GLOBALS['objMap']);
         else $constructJSON['aname'] = $opt;
-        $constructJSON['qnumber'] = $GLOBALS['questionCount'];
+        $constructJSON['qnumber'] = (int)$GLOBALS['questionCount'];
+        $constructJSON = json_encode($constructJSON);
+        return $constructJSON;
+    }
+
+    function terminal($content) {
+        $constructJSON = array();
+        $GLOBALS['questionCount']++;
+        $constructJSON['type'] = 'terminal';
+        $constructJSON['aname'] = $content;
+        $constructJSON['qnumber'] = (int)$GLOBALS['questionCount'];
         $constructJSON = json_encode($constructJSON);
         return $constructJSON;
     }
